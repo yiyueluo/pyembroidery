@@ -15,10 +15,10 @@ pattern = pyembroidery.EmbPattern()
 
 x_all, y_all = extract_pt_from_svg(args.input_path, args.scale,
                                    viz=args.viz, target_units=None)
-print ('control points extracted from svg')
+print('control points extracted from svg')
 
 '''single path'''
-if len(x_all) == 1:
+if len(x_all) == 1:  # only one path in the SVG file
     x_pos_all = []
     y_pos_all = []
     for i in range(len(x_all[0])-1):
@@ -38,10 +38,10 @@ if len(x_all) == 1:
 
 
 '''two crossing paths'''
-if len(x_all) == 2:
+if len(x_all) == 2:  # There are exactly two paths in the SVG file
     x_pos_all = [[],[]]
     y_pos_all = [[],[]]
-    print (len(x_all[0]), len(x_all[1]))
+    print(len(x_all[0]), len(x_all[1]))
     x, y = drawline_halfway_1(pattern, x_all, y_all, pitch=args.pitch)
     x_pos_all[0] += x
     y_pos_all[0] += y
@@ -63,6 +63,3 @@ if len(x_all) == 2:
         for i in range(len(x_pos_all[1])-1):
             plt.plot([x_pos_all[1][i], x_pos_all[1][i+1]], [y_pos_all[1][i], y_pos_all[1][i+1]])
         plt.show()
-
-
-

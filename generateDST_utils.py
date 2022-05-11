@@ -11,6 +11,13 @@ import re
 # Parse a size string such as "10mm" into its value, and convert it to the target units.
 # Adapted from https://github.com/SebKuzminsky/svg2gcode/blob/94f28c1877c721c66cd90a38750f78d8031ac85a/gcoder.py#L238
 def _parse_svg_size_string(size_str, target_units='mm'):
+    """Parse SVG size arrtibute string and returns a corresponding number.
+    Args
+        size_str (str): SVG size arrtibute string.
+        target_units (str): Unit of resulting number. It could be: 'mm', 'cm', 'in'.
+    Returns
+        (float): Resulting number of SVG size.
+    """
     # Get the original value and units.
     m = re.match('^([0-9.]+)([a-zA-Z]*)$', size_str)
     if m == None or len(m.groups()) != 2:
@@ -52,9 +59,27 @@ def _parse_svg_size_string(size_str, target_units='mm'):
     
     return val*scale
 
+
 def extract_pt_from_svg(file, scale, viz, target_units):
+    """Extract all control points from a SVG file.    
+    Structure of Path object:
+        Path(Line(start=(0.14+192.28j), end=(301.96+181.74j)),
+             Line(start=(301.96+181.74j), end=(1179.63+114.07j)),
+             Line(start=(1179.63+114.07j), end=(1867.76+76.93j)))
+        or
+        Path(CubicBezier(start=(10.5+80j), control1=(40+10j), control2=(65+10j), end=(95+80j))
+    Args
+        file (str): SVG file path.
+        scale (float): Design scale.
+        viz (bool): Whether to show control points or not.
+        target_units (str): Unit of resulting number. It could be: 'mm', 'cm', 'in'.
+    Returns
+        (tuple[list[list[float]], list[list[float]]]): 
+        e.g. tuple([[0.14, 301.96, 1179.63, 1867.76],...],
+                   [[-192.28, 181.74, 114.07, 76.93],...])
+    """
     paths, attributes = svg2paths(file)
-    # print (paths) # 0:path, 1:sec, 2:point
+    # print(paths)  # dimension 0:path, 1:line segment, 2:point
 
     x_all = []
     y_all = []
@@ -63,20 +88,20 @@ def extract_pt_from_svg(file, scale, viz, target_units):
         x = []
         y = []
         for j in range(len(paths[i])):
-            for k in [0, -1]:
+            for k in [0, -1]:  # index of start and end points
                 # print (paths[i][j][k])
                 x.append(paths[i][j][k].real)
-                y.append(-paths[i][j][k].imag)
+                y.append(-paths[i][j][k].imag)  # move coordinates from quadrant I to quadrant IV
 
         x_all.append(x)
         y_all.append(y)
 
         if viz:
-            plt.scatter(x,y, s=100, c='red')
+            plt.scatter(x, y, s=100, c='red')
             plt.show()
 
     if target_units != None:
-    
+
         # Scale to get the desired units.
         doc = svgpathtools.Document(file)
         svg_attributes = doc.root.attrib
@@ -116,6 +141,16 @@ def extract_pt_from_svg(file, scale, viz, target_units):
 
 
 def draw_line(pattern, st, ed, pitch, endpoint):
+    """Given a line segment and length of stitch (pitch), get control points of this line and finally add control points to the embrodery pattern.
+    Args
+        pattern (pyembroidery.EmbPattern): Embroidery pattern.
+        st (list[float, float]): Coordinate of starting control point of a line segment.
+        ed (list[float, float]): Coordinate of ending control point of a line segment.
+        pitch (int): Length of stitch.
+        endpoint (bool): (apply to np.linspace) If True, stop is the last sample. Otherwise, it is not included.
+    Returns
+        (tuple[list[float], list[float]]): Coordinate of control points of the given line segment.
+    """
     x_pos = []
     y_pos = []
     x_dis = ed[0] - st[0]
@@ -139,13 +174,22 @@ def draw_line(pattern, st, ed, pitch, endpoint):
 
     return x_pos, y_pos
 
+
 def draw_line_mid(pattern, st, ed, pitch):
+    """
+    Args
+        pattern (pyembroidery.EmbPattern): Embroidery pattern.
+        st (list[float, float]): Coordinate of starting control point of a line segment.
+        ed (list[float, float]): Coordinate of ending control point of a line segment.
+        pitch (int): Length of stitch.
+    Returns
+        (tuple[list[float], list[float]]): Coordinate of control points of the given line segment.
+    """
     x_pos = []
     y_pos = []
     x_dis = ed[0] - st[0]
     y_dis = ed[1] - st[1]
     dis = np.sqrt(x_dis**2 + y_dis**2)
-
 
     if dis <= 3 * pitch:
         x_mid = (st[0] + ed[0])/2
@@ -153,7 +197,7 @@ def draw_line_mid(pattern, st, ed, pitch):
         pattern.add_stitch_absolute(pyembroidery.STITCH, x_mid, y_mid)
         return [x_mid], [y_mid]
 
-    else:
+    else:  # (20220509 MikeChen):This part looks similar to draw_line().
         sec = dis//pitch
         x = np.linspace(st[0], ed[0], int(sec), endpoint=True)
         y = np.linspace(st[1], ed[1], int(sec), endpoint=True)
@@ -186,6 +230,15 @@ def line_intersection(x1, y1, x2, y2, x3, y3, x4, y4):
 
 
 def drawline_halfway_1(pattern, x_all, y_all, pitch):
+    """
+    Args
+        pattern (pyembroidery.EmbPattern): Embroidery pattern.
+        x_all (list[list[float]]): X coordinates of points of lines inside paths.
+        y_all (list[list[float]]): Y coordinates of points of lines inside paths.
+        pitch (int): Length of stitch.
+    Returns
+    
+    """
     pos_x = []
     pos_y = []
     for i in range(len(x_all[0])//2):
@@ -249,7 +302,11 @@ def drawline_halfway_1(pattern, x_all, y_all, pitch):
         # print (len(pos_x))
     return  pos_x, pos_y
 
+
 def drawline_halfway_2(pattern, x_all, y_all, pitch):
+    """
+    
+    """
     pos_x = []
     pos_y = []
     for i in range(len(x_all[1])//2):
