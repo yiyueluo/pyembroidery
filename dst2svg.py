@@ -8,7 +8,7 @@ import pyembroidery
 
 
 INPUT_PATH = './output/Asset 2palm.dst'
-OUTPUT_PATH = './SVG/test.svg'
+OUTPUT_PATH = './SVG/Asset 2palm_from-dst.svg'
 
 
 def main(args):

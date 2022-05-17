@@ -7,10 +7,25 @@ Created: 2022-05-10 Mike_Chen@wistron.com
 import argparse
 import pyembroidery
 import svgpathtools
-from svgpathtools import svg2paths, wsvg
+from svgpathtools import svg2paths2, wsvg
 
-INPUT_SVG_PATH = './SVG/4x4_margin_practice_3.svg'
-OUTPUT_SVG_PATH = './SVG/test2.svg'
+INPUT_SVG_PATH = './SVG/Asset 3cubic_beizer_practice_1.svg'
+OUTPUT_SVG_PATH = './SVG/test.svg'
+
+
+pattern = pyembroidery.EmbPattern()
+
+
+def complex2tuple(complex):
+    """Convert the representation of coodinate from complex number to tuple.
+    Args
+        complex (complex): Coodinate represents in complex number.
+    Returns
+        (tuple): Coodinate represents in tuple.
+    """
+    x = complex.real
+    y = complex.imag
+    return x, y
 
 
 def is_same_pt(pt1, pt2):
@@ -18,7 +33,7 @@ def is_same_pt(pt1, pt2):
     diff_real = abs(pt1.real - pt2.real)
     diff_imag = abs(pt1.imag - pt2.imag)
 
-    if diff_real<1e-5 and diff_imag<1e-5:
+    if diff_real<1e-1 and diff_imag<1e-1:
         return True
     return False
 
@@ -55,14 +70,83 @@ def group_paths(paths, attributes):
     return new_paths#, new_attributes
 
 
+def draw_curve(pattern, path, pitch=2.5):
+    """
+    Args
+        pattern (pyembroidery.EmbPattern):
+        path (svgpathtools.Path):
+        pitch (float): stitch length (mm) (default: 2.5)
+    """
+    stitches = []
+    dt = pitch/path.length()
+    t = 0
+    while t <= 1:
+        stitches.append(path.point(t))
+        t += dt
+
+    if path.length()%pitch:
+        stitches.append(path.end)
+
+    # add stitches on pattern
+    stitches = map(complex2tuple, stitches)
+    for x, y in stitches:
+        pattern.add_stitch_absolute(pyembroidery.STITCH, x, y)
+
+    return stitches
+
+
+def find_intersections(path1, path2):
+    """Find intersections between path1 and path2. The order of these intersections follows parameterization of path1 (ascending).
+    Args
+        path1 (svgpathtools.Path): path object 1.
+        path2 (svgpathtools.Path): path object 2.
+    Returns
+        (svgpathtools.Path): intersections between path1 and path2. Returns 'None' when there are no intersections.
+    """
+    intersections = []
+    for (T1, seg1, t1), (T2, seg2, t2) in path1.intersect(path2):
+        intersections.append([T1, path1.point(T1)])
+        # print(T1, path1.point(T1), seg1.point(t1))
+
+    if len(intersections)==0:
+        return None
+
+    # sort list according to T1 (parameterization of the path)
+    intersections.sort(key=lambda x: x[0])
+    return [i[1] for i in intersections]
+
+
+def draw_line_halfway(pattern, path1, path2, pitch):
+    """
+    Args
+    
+    Returns
+    
+    """
+    intersections = find_intersections(path1, path2)
+    
+    # comcatenate endpoints and intersections
+    # pts = [path1.start] + intersections + [path1.end]
+    # print(pts)
+
+
 def main(args):
 
-    paths, attributes = svg2paths(args.input_path)
+    paths, attributes, svg_attributes = svg2paths2(args.input_path)
+
+    # paths = group_paths(paths, attributes)
+    # wsvg(paths, svg_attributes=svg_attributes, filename=args.output_path)
+
+
+    # intersections = find_intersections(paths[1], paths[2])
+
+    # draw_line_halfway(None, paths[1], paths[2], pitch=1)
     
-    paths = group_paths(paths, attributes)
+    draw_curve(pattern, paths[0])
 
     # write out
-    wsvg(paths, filename=args.output_path)
+    pyembroidery.write_dst(pattern, args.input_path +'.dst')
+
 
 
 def parse_args():

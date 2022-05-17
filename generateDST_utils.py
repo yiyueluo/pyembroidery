@@ -141,7 +141,7 @@ def extract_pt_from_svg(file, scale, viz, target_units):
 
 
 def draw_line(pattern, st, ed, pitch, endpoint):
-    """Given a line segment and length of stitch (pitch), get control points of this line and finally add control points to the embrodery pattern.
+    """Given a line segment and length of stitch (pitch), get stitch points alone this line and finally add stitch points to the embrodery pattern. There will be at least 2 points generated, the endpoints are included.
     Args
         pattern (pyembroidery.EmbPattern): Embroidery pattern.
         st (list[float, float]): Coordinate of starting control point of a line segment.
@@ -176,7 +176,7 @@ def draw_line(pattern, st, ed, pitch, endpoint):
 
 
 def draw_line_mid(pattern, st, ed, pitch):
-    """
+    """Given a line segment and length of stitch (pitch), get stitch points alone this line and finally add stitch points to the embrodery pattern. There will be at least 1 points generated, the endpoints are NOT included.
     Args
         pattern (pyembroidery.EmbPattern): Embroidery pattern.
         st (list[float, float]): Coordinate of starting control point of a line segment.
@@ -197,7 +197,7 @@ def draw_line_mid(pattern, st, ed, pitch):
         pattern.add_stitch_absolute(pyembroidery.STITCH, x_mid, y_mid)
         return [x_mid], [y_mid]
 
-    else:  # (20220509 MikeChen):This part looks similar to draw_line().
+    else:
         sec = dis//pitch
         x = np.linspace(st[0], ed[0], int(sec), endpoint=True)
         y = np.linspace(st[1], ed[1], int(sec), endpoint=True)
@@ -230,40 +230,45 @@ def line_intersection(x1, y1, x2, y2, x3, y3, x4, y4):
 
 
 def drawline_halfway_1(pattern, x_all, y_all, pitch):
-    """
+    """Draw one of the paths (one of horizontal and vertical electrodes)
     Args
         pattern (pyembroidery.EmbPattern): Embroidery pattern.
         x_all (list[list[float]]): X coordinates of points of lines inside paths.
         y_all (list[list[float]]): Y coordinates of points of lines inside paths.
         pitch (int): Length of stitch.
     Returns
-    
+        (tuple[list[float], list[float]]): Coordinates of stitch points along the path.
     """
     pos_x = []
     pos_y = []
+    # for each line segment of path 0
     for i in range(len(x_all[0])//2):
         pt_x = []
         pt_y = []
         pt_x.append(x_all[0][2*i])
         pt_y.append(y_all[0][2*i])
 
+        # for each line segment of path 0
+        # 2*i is start index of i-th segment, 2*i+1 is end index of i-th segment
         for j in range(len(x_all[1])//2):
             int_pt = line_intersection(x_all[0][2*i], y_all[0][2*i], x_all[0][2*i+1], y_all[0][2*i+1],
                                        x_all[1][2*j], y_all[1][2*j], x_all[1][2*j+1], y_all[1][2*j+1])
 
-            if int_pt:
+            if int_pt:  # intersection points
                 pt_x.append(int_pt[0])
                 pt_y.append(int_pt[1])
 
         pt_x.append(x_all[0][2*i+1])
         pt_y.append(y_all[0][2*i+1])
 
-
         # print ('compare', x_all[1][2*i], x_all[1][2*i+1], pt_x[-2], pt_x[1])
+
+        # in case more than 1 interscetion point exists,
         if len(pt_x) > 3:
+            # and the order of intersections and endpoints are not fit to each other 
             if (x_all[0][2*i] > x_all[0][2*i+1] and pt_x[-2] > pt_x[1]) or (x_all[0][2*i] < x_all[0][2*i+1] and pt_x[-2] < pt_x[1]):
                 temp_x = pt_x[1:-1]
-                x = temp_x[::-1]
+                x = temp_x[::-1]  # reverse the order alone axis 1
                 temp_y = pt_y[1:-1]
                 y = temp_y[::-1]
                 pt_x[1:-1] =  x
@@ -304,8 +309,14 @@ def drawline_halfway_1(pattern, x_all, y_all, pitch):
 
 
 def drawline_halfway_2(pattern, x_all, y_all, pitch):
-    """
-    
+    """Draw the other one of the paths (one of horizontal and vertical electrodes)
+    Args
+        pattern (pyembroidery.EmbPattern): Embroidery pattern.
+        x_all (list[list[float]]): X coordinates of points of lines inside paths.
+        y_all (list[list[float]]): Y coordinates of points of lines inside paths.
+        pitch (int): Length of stitch.
+    Returns
+        (tuple[list[float], list[float]]): Coordinates of stitch points along the path.
     """
     pos_x = []
     pos_y = []

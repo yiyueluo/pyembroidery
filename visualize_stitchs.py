@@ -12,9 +12,7 @@ import svgpathtools
 from svgpathtools import svg2paths
 
 
-INPUT_SVG_PATH = './SVG/4x4_margin_practice_3.svg'
-# INPUT_SVG_PATH = './SVG/Asset 2palm.svg'
-# INPUT_SVG_PATH = './SVG/test.svg'
+INPUT_SVG_PATH = './SVG/foot_w_stitches.svg'
 
 
 def complex2tuple(complex):
@@ -47,7 +45,7 @@ def visualize_drawing(file, show_ctrlpts=False):
     control_pts = []
 
     for path in paths:
-        print(path)
+        # print(path)
         for seg in path:
             # every types of curve have endpoints (stitch points)
             start_endpts = complex2tuple(seg.start)
@@ -70,6 +68,7 @@ def visualize_drawing(file, show_ctrlpts=False):
             else:
                 # TODO: Implement Arc and QuadraticBezier handler later.
                 print('Unseen type of curve object in the path. It could be Arc or QuadraticBezier.')
+                print(type(seg))
 
     patch = mpatches.PathPatch(mpath.Path(verts, codes),
         fc="none", transform=ax.transData)
@@ -78,7 +77,7 @@ def visualize_drawing(file, show_ctrlpts=False):
     xs, ys = zip(*stitch_pts)
     ax.plot(xs, ys, 'x', lw=2, color='red', ms=10)
 
-    if show_ctrlpts:
+    if show_ctrlpts and control_pts!=[]:
         xs, ys = zip(*control_pts)
         ax.plot(xs, ys, 'x', lw=2, color='orange', ms=10)
 
