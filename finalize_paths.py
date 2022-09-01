@@ -134,18 +134,18 @@ def main(args):
 
     paths, attributes, svg_attributes = svg2paths2(args.input_path)
 
-    # paths = group_paths(paths, attributes)
-    # wsvg(paths, svg_attributes=svg_attributes, filename=args.output_path)
+    paths = group_paths(paths, attributes)
+    wsvg(paths, svg_attributes=svg_attributes, filename=args.output_path)
 
 
     # intersections = find_intersections(paths[1], paths[2])
 
     # draw_line_halfway(None, paths[1], paths[2], pitch=1)
     
-    draw_curve(pattern, paths[0])
+    # draw_curve(pattern, paths[0])
 
     # write out
-    pyembroidery.write_dst(pattern, args.input_path +'.dst')
+    # pyembroidery.write_dst(pattern, args.input_path +'.dst')
 
 
 
